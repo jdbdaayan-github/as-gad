@@ -1,13 +1,13 @@
 <template>
   <!-- Using a single wrapper for the entire header section -->
-  <header class="w-full flex flex-col">
+  <header class="w-full flex flex-col relative z-50">
     
-    <!-- Top Announcement Bar (Based on image_3483d0.png) -->
-    <div class="bg-[#111827] w-full px-4 sm:px-6 lg:px-8 py-1 flex justify-center items-center">
-      <div class="flex items-center space-x-2 text-white text-xs sm:text-sm font-medium tracking-wide">
+    <!-- Top Announcement Bar -->
+    <div class="bg-[#111827] w-full px-4 sm:px-6 lg:px-8 py-1.5 flex justify-center items-center">
+      <div class="flex items-center space-x-2 text-white text-xs sm:text-sm font-medium tracking-wide text-center">
         <!-- Shield Icon -->
         <svg 
-          class="w-4 h-4 text-blue-400" 
+          class="w-4 h-4 text-blue-400 shrink-0" 
           fill="none" 
           stroke="currentColor" 
           viewBox="0 0 24 24" 
@@ -31,7 +31,6 @@
           
           <!-- Left Side: Logos and Title -->
           <div class="flex items-center space-x-4">
-            
             <!-- Logos -->
             <div class="flex items-center space-x-3">
               <DSWDLogo/>
@@ -39,18 +38,17 @@
             </div>
 
             <!-- Titles -->
-            <div class="hidden sm:flex items-center space-x-1.5 ml-2">
-              <span class="text-white font-bold text-lg tracking-wide">
+            <div class="hidden sm:flex flex-col md:flex-row md:items-center md:space-x-1.5 ml-2">
+              <span class="text-white font-bold text-base md:text-lg tracking-wide">
                 Administrative Service
               </span>
-              <span class="text-[#FFD700] font-bold text-lg tracking-wide">
+              <span class="text-[#FFD700] font-bold text-base md:text-lg tracking-wide">
                 Gender and Development Information Hub
               </span>
             </div>
-            
           </div>
 
-          <!-- Right Side: Navigation Links -->
+          <!-- Right Side: Desktop Navigation Links -->
           <div class="hidden md:block">
             <div class="ml-10 flex items-baseline space-x-6">
               <a 
@@ -65,12 +63,50 @@
           </div>
 
           <!-- Mobile Menu Button -->
-          <div class="md:hidden flex items-center text-white">
+          <div class="md:hidden flex items-center">
+            <button 
+              @click="toggleMobileMenu"
+              class="text-white hover:text-gray-300 focus:outline-none p-1 transition-colors"
+              aria-label="Toggle menu"
+            >
+              <!-- Hamburger menu icon when closed, X icon when open -->
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                <path 
+                  v-if="!isMobileMenuOpen"
+                  stroke-linecap="round" 
+                  stroke-linejoin="round" 
+                  stroke-width="2" 
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+                <path 
+                  v-else
+                  stroke-linecap="round" 
+                  stroke-linejoin="round" 
+                  stroke-width="2" 
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
+            </button>
           </div>
           
+        </div>
+      </div>
+
+      <!-- Mobile Dropdown Navigation Menu -->
+      <div 
+        v-show="isMobileMenuOpen"
+        class="md:hidden bg-[#3b0a6b] border-t border-[#5d16a6] transition-all duration-200 ease-in-out"
+      >
+        <div class="px-4 pt-2 pb-4 space-y-1">
+          <a 
+            v-for="item in navItems" 
+            :key="item.name" 
+            :href="item.href" 
+            @click="isMobileMenuOpen = false"
+            class="block text-white hover:bg-[#4c0f89] px-3 py-2.5 rounded-md text-sm font-semibold uppercase tracking-wider transition-colors"
+          >
+            {{ item.name }}
+          </a>
         </div>
       </div>
     </nav>
@@ -82,6 +118,13 @@
 import { ref } from 'vue'
 import DSWDLogo from '../../DSWDLogo.vue';
 import BPLogo from '../../BPLogo.vue';
+
+// Reactive state for opening/closing the mobile dropdown menu
+const isMobileMenuOpen = ref(false)
+
+const toggleMobileMenu = () => {
+  isMobileMenuOpen.value = !isMobileMenuOpen.value
+}
 
 // Navigation links array
 const navItems = ref([
