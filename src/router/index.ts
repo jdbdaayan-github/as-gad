@@ -80,7 +80,7 @@ const router = createRouter({
 })
 
 // Global Navigation Guard
-router.beforeEach(async (to, from, next) => {
+router.beforeEach(async (to, _from, next) => {
   // Check if the route requires authentication or guest status
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
   const requiresGuest = to.matched.some(record => record.meta.requiresGuest)
