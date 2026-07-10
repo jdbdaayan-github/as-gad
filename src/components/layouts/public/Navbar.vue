@@ -51,14 +51,15 @@
           <!-- Right Side: Desktop Navigation Links -->
           <div class="hidden md:block">
             <div class="ml-10 flex items-baseline space-x-6">
-              <a 
+              <router-link 
                 v-for="item in navItems" 
                 :key="item.name" 
-                :href="item.href" 
+                :to="item.path" 
                 class="text-white hover:text-gray-300 px-3 py-2 text-sm font-semibold uppercase tracking-wider transition-colors duration-200"
+                active-class="text-[#FFD700] border-b-2 border-[#FFD700]"
               >
                 {{ item.name }}
-              </a>
+              </router-link>
             </div>
           </div>
 
@@ -98,15 +99,16 @@
         class="md:hidden bg-[#3b0a6b] border-t border-[#5d16a6] transition-all duration-200 ease-in-out"
       >
         <div class="px-4 pt-2 pb-4 space-y-1">
-          <a 
+          <router-link 
             v-for="item in navItems" 
             :key="item.name" 
-            :href="item.href" 
+            :to="item.path" 
             @click="isMobileMenuOpen = false"
             class="block text-white hover:bg-[#4c0f89] px-3 py-2.5 rounded-md text-sm font-semibold uppercase tracking-wider transition-colors"
+            active-class="text-[#FFD700] bg-[#4c0f89]"
           >
             {{ item.name }}
-          </a>
+          </router-link>
         </div>
       </div>
     </nav>
@@ -126,11 +128,11 @@ const toggleMobileMenu = () => {
   isMobileMenuOpen.value = !isMobileMenuOpen.value
 }
 
-// Navigation links array
+// Updated: Navigation links array utilizing 'path' for Vue Router
 const navItems = ref([
-  { name: 'Home', href: '#' },
-  { name: 'Directory', href: '#' },
-  { name: 'Activities', href: '#' },
-  { name: 'Resources', href: '#' },
+  { name: 'Home', path: '/' },
+  { name: 'Directory', path: '/directory' },
+  { name: 'Activities', path: '/activities' },
+  { name: 'Resources', path: '/resources' },
 ])
 </script>

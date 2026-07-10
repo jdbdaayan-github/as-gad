@@ -11,6 +11,7 @@ import DataDisaggregation from '../views/admin/DataDisaggregation.vue'
 import Banner from '../views/admin/Banner.vue'
 import Announcements from '../views/admin/Announcements.vue'
 import Activities from '../views/admin/Activities.vue'
+import ActivitiesPage from '../views/public/ActivitiesPage.vue'
 
 // Helper function to reliably check Firebase Auth state on initial page load
 const getCurrentUser = () => {
@@ -33,6 +34,11 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: Home
+    },
+    {
+      path: '/activities',
+      name: 'ActivitiesPage',
+      component: ActivitiesPage
     },
     {
       path: '/login',
