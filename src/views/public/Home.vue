@@ -1,26 +1,85 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import Banner from '../../components/Banner.vue';
 import PublicLayout from '../../layouts/PublicLayout.vue';
 
-// Data for the tables
-const maleData = ref([
-  { division: 'AS-OD', count: 4 },
-  { division: 'GSD', count: 80 },
-  { division: 'PSAMD', count: 19 },
-  { division: 'BGMD', count: 22 },
-  { division: 'RAMD', count: 11 },
-  { division: 'PMD', count: 30 },
-]);
+import { db } from '../../firebase/index.js';
+import { collection, getDocs } from 'firebase/firestore';
 
-const femaleData = ref([
-  { division: 'AS-OD', count: 6 },
-  { division: 'GSD', count: 20 },
-  { division: 'PSAMD', count: 9 },
-  { division: 'BGMD', count: 3 },
-  { division: 'RAMD', count: 11 },
-  { division: 'PMD', count: 33 },
-]);
+
+const divisionsData = ref([]);
+const isLoading = ref(true);
+
+
+// Fetch Firestore Data
+const fetchDisaggregatedData = async () => {
+  try {
+
+    const snapshot = await getDocs(
+      collection(db, 'divisionsData')
+    );
+
+    divisionsData.value = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+
+  } catch(error) {
+    console.error("Firestore Error:", error);
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+
+// Male Data
+const maleData = computed(() => {
+
+  return divisionsData.value.map(item => ({
+    division: item.name,
+    count: Number(item.male)
+  }));
+
+});
+
+
+// Female Data
+const femaleData = computed(() => {
+
+  return divisionsData.value.map(item => ({
+    division: item.name,
+    count: Number(item.female)
+  }));
+
+});
+
+
+// Total Male
+const totalMale = computed(() => {
+
+  return divisionsData.value.reduce(
+    (total,item)=> total + Number(item.male),
+    0
+  );
+
+});
+
+
+// Total Female
+const totalFemale = computed(() => {
+
+  return divisionsData.value.reduce(
+    (total,item)=> total + Number(item.female),
+    0
+  );
+
+});
+
+
+onMounted(()=>{
+  fetchDisaggregatedData();
+});
+
 </script>
 
 <template>
@@ -42,14 +101,52 @@ const femaleData = ref([
         </div>
 
         <!-- Cards Container -->
-        <div class="flex flex-col md:flex-row justify-center items-start gap-8">
+        <!-- Loading State -->
+<div v-if="isLoading" class="flex justify-center items-center py-20">
+  <div class="flex flex-col items-center gap-3">
+    <svg 
+      class="animate-spin h-8 w-8 text-[#4c0f89]" 
+      xmlns="http://www.w3.org/2000/svg" 
+      fill="none" 
+      viewBox="0 0 24 24"
+    >
+      <circle 
+        class="opacity-25" 
+        cx="12" 
+        cy="12" 
+        r="10" 
+        stroke="currentColor" 
+        stroke-width="4">
+      </circle>
+
+      <path 
+        class="opacity-75" 
+        fill="currentColor" 
+        d="M4 12a8 8 0 018-8v4l3-3-3-3a8 8 0 00-8 8h4z">
+      </path>
+    </svg>
+
+    <span class="text-sm text-gray-500">
+      Loading sex-disaggregated data...
+    </span>
+  </div>
+</div>
+
+
+<!-- Data Cards -->
+<div 
+  v-else
+  class="flex flex-col md:flex-row justify-center items-start gap-8"
+>
           
           <!-- Male Card -->
           <div class="bg-white rounded-xl shadow-lg shadow-gray-200/50 p-5 w-full md:w-[400px]">
             <!-- Card Header -->
             <div class="bg-[#3f51b5] rounded-md px-4 py-2.5 flex justify-between items-center mb-4">
               <span class="text-white font-bold tracking-widest text-sm uppercase">Male</span>
-              <span class="bg-white text-[#3f51b5] font-bold px-3 py-0.5 rounded text-sm">166</span>
+              <span class="bg-white text-[#3f51b5] font-bold px-3 py-0.5 rounded text-sm">
+{{ totalMale }}
+</span>
             </div>
             
             <div class="text-[13px] text-gray-800 mb-2 px-1">No. per Division</div>
@@ -72,7 +169,9 @@ const femaleData = ref([
             <!-- Card Header -->
             <div class="bg-[#3f51b5] rounded-md px-4 py-2.5 flex justify-between items-center mb-4">
               <span class="text-white font-bold tracking-widest text-sm uppercase">Female</span>
-              <span class="bg-white text-[#3f51b5] font-bold px-3 py-0.5 rounded text-sm">82</span>
+              <span class="bg-white text-[#3f51b5] font-bold px-3 py-0.5 rounded text-sm">
+{{ totalFemale }}
+</span>
             </div>
             
             <div class="text-[13px] text-gray-800 mb-2 px-1">No. per Division</div>

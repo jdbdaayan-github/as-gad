@@ -48,6 +48,10 @@
           </p>
         </div>
 
+        <p v-if="errorMessage" class="text-sm text-red-600 text-center">
+        {{ errorMessage }}
+        </p>
+
         <form class="mt-8 space-y-6" @submit.prevent="handleLogin">
           <div class="space-y-4">
             <!-- Email Input -->
@@ -131,6 +135,9 @@ import DSWDLogo from '../../components/DSWDLogo.vue';
 import BPLogo from '../../components/BPLogo.vue';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../../firebase/index.ts'; // Adjust path if necessary
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
 
 const email = ref('');
 const password = ref('');
@@ -138,12 +145,19 @@ const errorMessage = ref('');
 
 const handleLogin = async () => {
   try {
-    const userCredential = await signInWithEmailAndPassword(auth, email.value, password.value);
+    const userCredential = await signInWithEmailAndPassword(
+      auth,
+      email.value,
+      password.value
+    );
+
     const user = userCredential.user;
+
     console.log('Successfully logged in!', user);
-    
-    // Redirect the user to the dashboard here (e.g., using vue-router)
-    
+
+    // Redirect to admin dashboard
+    router.push('/admin');
+
   } catch (error) {
     console.error('Error logging in:', error.message);
     errorMessage.value = "Invalid email or password.";
