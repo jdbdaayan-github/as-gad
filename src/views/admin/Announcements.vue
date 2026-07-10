@@ -1,0 +1,367 @@
+<template>
+  <AdminLayout>
+    <template #header-title>Announcements</template>
+
+    <div class="w-full space-y-6">
+      
+      <!-- Page Header & Global Actions -->
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 class="text-2xl font-semibold tracking-tight text-slate-900">
+            Announcements
+          </h1>
+          <p class="text-sm text-slate-500 mt-1">
+            Create and manage public announcements, news, and updates for the hub.
+          </p>
+        </div>
+        
+        <button 
+          @click="openCreateModal"
+          class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 bg-slate-900 text-slate-50 hover:bg-slate-900/90 h-10 px-4 py-2 shadow-sm"
+        >
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
+          New Announcement
+        </button>
+      </div>
+
+      <!-- Main Data Table Area -->
+      <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden z-10 relative">
+        
+        <!-- Table Toolbar -->
+        <div class="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 bg-slate-50/50">
+          <div class="relative w-full sm:max-w-sm">
+            <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            <input 
+              type="text" 
+              placeholder="Search announcements..." 
+              class="flex h-9 w-full rounded-md border border-slate-200 bg-white px-3 pl-9 py-1 text-sm shadow-sm transition-colors placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-950" 
+            />
+          </div>
+          
+          <div class="flex items-center gap-2 w-full sm:w-auto">
+            <select class="h-9 rounded-md border border-slate-200 bg-white px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-950 w-full sm:w-auto">
+              <option value="all">All Status</option>
+              <option value="published">Published</option>
+              <option value="draft">Draft</option>
+              <option value="archived">Archived</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- The Table -->
+        <div class="w-full overflow-auto">
+          <table class="w-full text-sm text-left text-slate-600">
+            <thead class="text-xs text-slate-500 bg-slate-50/80 uppercase font-medium border-b border-slate-200">
+              <tr>
+                <th scope="col" class="px-6 py-4 w-1/2">Announcement</th>
+                <th scope="col" class="px-6 py-4 text-left">Status</th>
+                <th scope="col" class="px-6 py-4 text-left">Date Posted</th>
+                <th scope="col" class="px-6 py-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <tr 
+                v-for="item in announcements" 
+                :key="item.id"
+                class="hover:bg-slate-50/50 transition-colors group"
+              >
+                <td class="px-6 py-4">
+                  <div class="font-medium text-slate-900 mb-1">{{ item.title }}</div>
+                  <div class="text-xs text-slate-500 line-clamp-1 pr-4">{{ item.content }}</div>
+                </td>
+                
+                <td class="px-6 py-4">
+                  <span v-if="item.status === 'Published'" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200 shadow-sm">
+                    Published
+                  </span>
+                  <span v-else-if="item.status === 'Draft'" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200 shadow-sm">
+                    Draft
+                  </span>
+                  <span v-else class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200 shadow-sm">
+                    Archived
+                  </span>
+                </td>
+                
+                <td class="px-6 py-4 whitespace-nowrap text-slate-500">
+                  {{ formatDate(item.date) }}
+                </td>
+                
+                <td class="px-6 py-4 text-right">
+                  <div class="flex items-center justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                    <!-- Edit Button -->
+                    <button 
+                      @click="openEditModal(item)"
+                      class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-slate-100 hover:text-slate-900 h-8 w-8 text-slate-500"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                    </button>
+                    <!-- Delete Button -->
+                    <button 
+                      @click="openDeleteModal(item)"
+                      class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-red-50 hover:text-red-600 h-8 w-8 text-slate-500"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              
+              <!-- Empty State -->
+              <tr v-if="announcements.length === 0">
+                <td colspan="4" class="px-6 py-12 text-center text-slate-500">
+                  No announcements found. Click "New Announcement" to create one.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Create/Edit Modal Overlay -->
+    <div v-if="showFormModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-sm animate-in fade-in duration-200">
+      <!-- Modal Content -->
+      <div class="bg-white rounded-xl shadow-lg border border-slate-200 w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
+        
+        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+          <h2 class="text-lg font-semibold text-slate-900">
+            {{ isEditing ? 'Edit Announcement' : 'Compose Announcement' }}
+          </h2>
+          <button @click="closeFormModal" class="text-slate-400 hover:text-slate-600 focus:outline-none">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
+        </div>
+
+        <form @submit.prevent="saveAnnouncement" class="p-6 space-y-6">
+          <div class="space-y-4">
+            <!-- Title -->
+            <div class="space-y-2">
+              <label class="text-sm font-medium leading-none text-slate-900">Announcement Title</label>
+              <input 
+                type="text" 
+                v-model="form.title"
+                placeholder="e.g., Scheduled System Maintenance" 
+                class="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950" 
+                required
+              />
+            </div>
+
+            <!-- Content -->
+            <div class="space-y-2">
+              <label class="text-sm font-medium leading-none text-slate-900">Message Content</label>
+              <textarea 
+                v-model="form.content"
+                rows="5"
+                placeholder="Write the full details of the announcement here..." 
+                class="flex w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 resize-y" 
+                required
+              ></textarea>
+            </div>
+
+            <!-- Meta details row -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="space-y-2">
+                <label class="text-sm font-medium leading-none text-slate-900">Status</label>
+                <select 
+                  v-model="form.status"
+                  class="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950"
+                >
+                  <option value="Published">Published (Live)</option>
+                  <option value="Draft">Draft</option>
+                  <option value="Archived">Archived</option>
+                </select>
+              </div>
+              <div class="space-y-2">
+                <label class="text-sm font-medium leading-none text-slate-900">Date Posted</label>
+                <input 
+                  type="date" 
+                  v-model="form.date"
+                  class="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950" 
+                  required
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-2 flex justify-end gap-2">
+            <button 
+              type="button" 
+              @click="closeFormModal"
+              class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-slate-100 hover:text-slate-900 h-10 px-4 py-2 border border-slate-200 bg-white text-slate-700"
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit" 
+              class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 bg-slate-900 text-slate-50 hover:bg-slate-900/90 h-10 px-6 py-2 shadow-sm"
+            >
+              {{ isEditing ? 'Save Changes' : 'Publish Announcement' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Delete Confirmation Modal Overlay -->
+    <div v-if="showDeleteModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-sm animate-in fade-in duration-200">
+      <!-- Alert Dialog Content -->
+      <div class="bg-white rounded-xl shadow-lg border border-slate-200 w-full max-w-md p-6 animate-in zoom-in-95 duration-200">
+        
+        <div class="flex flex-col gap-4">
+          <div class="flex items-start gap-4">
+            <div class="p-2 bg-red-100 text-red-600 rounded-full shrink-0">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+            </div>
+            <div>
+              <h2 class="text-lg font-semibold text-slate-900">Delete Announcement</h2>
+              <p class="text-sm text-slate-500 mt-1">
+                Are you sure you want to delete this announcement? This action cannot be undone and it will be permanently removed from the system.
+              </p>
+              <div class="mt-3 p-3 bg-slate-50 border border-slate-100 rounded-md text-sm text-slate-700 font-medium line-clamp-1">
+                "{{ itemToDelete?.title }}"
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-2 mt-2">
+            <button 
+              type="button" 
+              @click="closeDeleteModal"
+              class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-slate-100 hover:text-slate-900 h-10 px-4 py-2 border border-slate-200 bg-white text-slate-700"
+            >
+              Cancel
+            </button>
+            <button 
+              @click="confirmDelete"
+              class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 bg-red-600 text-white hover:bg-red-700 h-10 px-6 py-2 shadow-sm"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </AdminLayout>
+</template>
+
+<script setup>
+import { ref } from 'vue';
+import AdminLayout from '../../layouts/AdminLayout.vue';
+
+// --- State for Modals ---
+const showFormModal = ref(false);
+const showDeleteModal = ref(false);
+const isEditing = ref(false);
+const itemToDelete = ref(null);
+
+// Form model
+const form = ref({
+  id: null,
+  title: '',
+  content: '',
+  status: 'Published',
+  date: ''
+});
+
+// Mock data for announcements
+const announcements = ref([
+  {
+    id: 1,
+    title: 'New GAD Guidelines Released for 2026',
+    content: 'Please be advised that the updated Gender and Development (GAD) guidelines for the fiscal year 2026 have been officially released. All division heads are required to review the attached documentation.',
+    status: 'Published',
+    date: '2026-07-08'
+  },
+  {
+    id: 2,
+    title: 'System Maintenance Notice',
+    content: 'The Hub will undergo scheduled maintenance this coming weekend. During this time, the documentations and activities portals will be temporarily inaccessible.',
+    status: 'Draft',
+    date: '2026-07-15'
+  },
+  {
+    id: 3,
+    title: 'Quarterly Report Submission Deadline',
+    content: 'A gentle reminder to all focal persons that the Q2 report submissions are due by the end of the month. Late submissions will require written justification.',
+    status: 'Archived',
+    date: '2026-06-25'
+  }
+]);
+
+// --- Helper Functions ---
+const formatDate = (dateString) => {
+  const options = { year: 'numeric', month: 'long', day: 'numeric' };
+  return new Date(dateString).toLocaleDateString('en-US', options);
+};
+
+const getTodayDate = () => new Date().toISOString().split('T')[0];
+
+const resetForm = () => {
+  form.value = {
+    id: null,
+    title: '',
+    content: '',
+    status: 'Published',
+    date: getTodayDate()
+  };
+};
+
+// --- Form Modal Actions ---
+const openCreateModal = () => {
+  isEditing.value = false;
+  resetForm();
+  showFormModal.value = true;
+};
+
+const openEditModal = (item) => {
+  isEditing.value = true;
+  // Clone item into form so we don't mutate the table immediately before saving
+  form.value = { ...item };
+  showFormModal.value = true;
+};
+
+const closeFormModal = () => {
+  showFormModal.value = false;
+};
+
+const saveAnnouncement = () => {
+  if (isEditing.value) {
+    // Update existing
+    const index = announcements.value.findIndex(a => a.id === form.value.id);
+    if (index !== -1) {
+      announcements.value[index] = { ...form.value };
+    }
+  } else {
+    // Create new
+    const newId = announcements.value.length ? Math.max(...announcements.value.map(a => a.id)) + 1 : 1;
+    announcements.value.unshift({
+      ...form.value,
+      id: newId
+    });
+  }
+  
+  // Replace with actual API call (e.g., Firebase) here.
+  
+  closeFormModal();
+};
+
+// --- Delete Modal Actions ---
+const openDeleteModal = (item) => {
+  itemToDelete.value = item;
+  showDeleteModal.value = true;
+};
+
+const closeDeleteModal = () => {
+  showDeleteModal.value = false;
+  itemToDelete.value = null;
+};
+
+const confirmDelete = () => {
+  if (itemToDelete.value) {
+    announcements.value = announcements.value.filter(a => a.id !== itemToDelete.value.id);
+    // Replace with actual API delete call here.
+  }
+  closeDeleteModal();
+};
+</script>
