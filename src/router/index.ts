@@ -12,6 +12,10 @@ import Banner from '../views/admin/Banner.vue'
 import Announcements from '../views/admin/Announcements.vue'
 import Activities from '../views/admin/Activities.vue'
 import ActivitiesPage from '../views/public/ActivitiesPage.vue'
+import Documentation from '../views/admin/Documentation.vue'
+import Directory from '../views/admin/Directory.vue'
+import PubDirectory from '../views/public/PubDirectory.vue'
+import TWG from '../views/admin/TWG.vue'
 
 // Helper function to reliably check Firebase Auth state on initial page load
 const getCurrentUser = () => {
@@ -39,6 +43,11 @@ const router = createRouter({
       path: '/activities',
       name: 'ActivitiesPage',
       component: ActivitiesPage
+    },
+    {
+      path: '/directory',
+      name: 'pubdirectory',
+      component: PubDirectory
     },
     {
       path: '/login',
@@ -80,6 +89,24 @@ const router = createRouter({
       path: '/admin/activities',
       name: 'activities',
       component: Activities,
+      meta: { requiresAuth: true } // Add meta tag to identify protected routes
+    },
+    {
+      path: '/admin/documentations',
+      name: 'documentations',
+      component: Documentation,
+      meta: { requiresAuth: true } // Add meta tag to identify protected routes
+    },
+    {
+      path: '/admin/directory',
+      name: 'directory',
+      component: Directory,
+      meta: { requiresAuth: true } // Add meta tag to identify protected routes
+    },
+    {
+      path: '/admin/twg',
+      name: 'twg',
+      component: TWG,
       meta: { requiresAuth: true } // Add meta tag to identify protected routes
     }
   ]
