@@ -128,11 +128,12 @@ const toggleMobileMenu = () => {
   isMobileMenuOpen.value = !isMobileMenuOpen.value
 }
 
-// Updated: Navigation links array utilizing 'path' for Vue Router
+// Updated: Added FAQs to the Navigation links array
 const navItems = ref([
   { name: 'Home', path: '/' },
   { name: 'Directory', path: '/directory' },
   { name: 'Activities', path: '/activities' },
   { name: 'Resources', path: '/resources' },
+  { name: 'FAQs', path: '/faqs' },
 ])
 </script>

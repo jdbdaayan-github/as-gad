@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { getAuth, signOut } from 'firebase/auth'
+import { getAuth, signOut, onAuthStateChanged } from 'firebase/auth'
 
 const router = useRouter()
 const auth = getAuth()
@@ -17,6 +17,12 @@ const closeSidebar = () => {
   isSidebarOpen.value = false
 }
 
+// --- Auth State ---
+const userEmail = ref('')
+
+// --- Logout Confirmation State ---
+const showLogoutModal = ref(false)
+
 // --- Session Expiration (Idle Timeout) Logic ---
 let timeoutTimer = null
 const IDLE_TIMEOUT_MS = 15 * 60 * 1000 // 15 minutes 
@@ -27,7 +33,7 @@ const resetIdleTimer = () => {
   timeoutTimer = setTimeout(handleAutoLogout, IDLE_TIMEOUT_MS)
 }
 
-// Function to log the user out
+// Function to log the user out automatically
 const handleAutoLogout = async () => {
   try {
     alert("Your session has expired due to inactivity.")
@@ -38,10 +44,21 @@ const handleAutoLogout = async () => {
   }
 }
 
-// Manual Logout for the "Log out" button
-const manualLogout = async () => {
+// Prompt manual logout
+const promptLogout = () => {
+  showLogoutModal.value = true
+}
+
+// Close logout modal
+const closeLogoutModal = () => {
+  showLogoutModal.value = false
+}
+
+// Execute Manual Logout
+const confirmLogout = async () => {
   try {
     await signOut(auth)
+    showLogoutModal.value = false
     router.push('/login')
   } catch (error) {
     console.error("Logout Error:", error)
@@ -70,6 +87,13 @@ const cleanupActivityListeners = () => {
 
 onMounted(() => {
   setupActivityListeners()
+  
+  // Listen for auth changes to get the user's email
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      userEmail.value = user.email
+    }
+  })
 })
 
 onUnmounted(() => {
@@ -213,10 +237,21 @@ onUnmounted(() => {
               <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
               Resources
             </router-link>
+
+            <router-link 
+              to="/admin/faqs" 
+              class="flex items-center gap-3 rounded-md px-4 py-2 text-sm font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+              active-class="bg-slate-100 text-slate-900"
+              @click="closeSidebar"
+            >
+              <!-- Question Mark Icon -->
+              <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              FAQs
+            </router-link>
           </div>
         </div>
 
-        <!-- Group: System -->
+        <!-- Group: System (Moved Settings to bottom, kept directories here) -->
         <div class="px-3">
           <h2 class="mb-2 px-4 text-xs font-semibold tracking-tight text-slate-500 uppercase">
             System
@@ -243,29 +278,21 @@ onUnmounted(() => {
               </svg>
               TWG Directory
             </router-link>
-            
-            <router-link 
-              to="/admin/settings" 
-              class="flex items-center gap-3 rounded-md px-4 py-2 text-sm font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors"
-              active-class="bg-slate-100 text-slate-900"
-              @click="closeSidebar"
-            >
-              <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-              Settings
-            </router-link>
           </div>
         </div>
       </nav>
 
-      <!-- Bottom Profile/Logout Area -->
+      <!-- Bottom Profile/Settings Area -->
       <div class="p-4 border-t border-slate-200 shrink-0">
-        <button 
-          @click="manualLogout"
-          class="w-full flex items-center gap-3 px-4 py-2 rounded-md text-sm font-medium text-slate-500 hover:bg-slate-100 hover:text-red-600 transition-colors"
+        <router-link 
+          to="/admin/settings" 
+          class="w-full flex items-center gap-3 px-4 py-2 rounded-md text-sm font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+          active-class="bg-slate-100 text-slate-900"
+          @click="closeSidebar"
         >
-          <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-          Log out
-        </button>
+          <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+          Settings
+        </router-link>
       </div>
     </aside>
 
@@ -291,8 +318,9 @@ onUnmounted(() => {
         
         <!-- Right: Actions & Profile -->
         <div class="flex items-center gap-4">
-          <button @click="manualLogout" class="h-8 w-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 font-medium text-xs hover:bg-slate-200 transition-colors" title="Log Out">
-            <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+          <button @click="promptLogout" class="h-8 px-3 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 font-medium text-xs hover:bg-slate-200 transition-colors gap-2" title="Log Out">
+            <span class="truncate max-w-[150px] sm:max-w-[200px]">{{ userEmail || 'Admin' }}</span>
+            <svg class="w-4 h-4 text-slate-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
           </button>
         </div>
       </header>
@@ -306,6 +334,21 @@ onUnmounted(() => {
       </div>
       
     </main>
+
+    <!-- Logout Confirmation Modal -->
+    <div v-if="showLogoutModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-sm animate-in fade-in duration-200">
+      <div class="bg-white rounded-xl shadow-lg border border-slate-200 w-full max-w-sm p-6 animate-in zoom-in-95 duration-200">
+        <h2 class="text-lg font-semibold text-slate-900 mb-2">Log Out</h2>
+        <p class="text-sm text-slate-500 mb-6">Are you sure you want to log out of your session?</p>
+        <div class="flex justify-end gap-2">
+          <button @click="closeLogoutModal" class="px-4 py-2 text-sm border border-slate-200 text-slate-700 rounded-md hover:bg-slate-50 transition-colors focus:outline-none">Cancel</button>
+          <button @click="confirmLogout" class="px-6 py-2 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors flex items-center focus:outline-none">
+            Log out
+          </button>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
