@@ -32,6 +32,7 @@
           <div class="relative w-full sm:max-w-sm">
             <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
             <input 
+              v-model="searchQuery"
               type="text" 
               placeholder="Search announcements..." 
               class="flex h-9 w-full rounded-md border border-slate-200 bg-white px-3 pl-9 py-1 text-sm shadow-sm transition-colors placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-950" 
@@ -39,11 +40,11 @@
           </div>
           
           <div class="flex items-center gap-2 w-full sm:w-auto">
-            <select class="h-9 rounded-md border border-slate-200 bg-white px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-950 w-full sm:w-auto">
+            <select v-model="statusFilter" class="h-9 rounded-md border border-slate-200 bg-white px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-950 w-full sm:w-auto">
               <option value="all">All Status</option>
-              <option value="published">Published</option>
-              <option value="draft">Draft</option>
-              <option value="archived">Archived</option>
+              <option value="Published">Published</option>
+              <option value="Draft">Draft</option>
+              <option value="Archived">Archived</option>
             </select>
           </div>
         </div>
@@ -53,18 +54,44 @@
           <table class="w-full text-sm text-left text-slate-600">
             <thead class="text-xs text-slate-500 bg-slate-50/80 uppercase font-medium border-b border-slate-200">
               <tr>
-                <th scope="col" class="px-6 py-4 w-1/2">Announcement</th>
+                <th scope="col" class="px-6 py-4 w-16">Cover</th>
+                <th scope="col" class="px-6 py-4 w-2/5">Announcement</th>
                 <th scope="col" class="px-6 py-4 text-left">Status</th>
                 <th scope="col" class="px-6 py-4 text-left">Date Posted</th>
                 <th scope="col" class="px-6 py-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
+              
+              <tr v-if="isLoading">
+                <td colspan="5" class="px-6 py-12 text-center text-slate-500">
+                  <div class="flex items-center justify-center gap-2">
+                    <svg class="animate-spin h-5 w-5 text-slate-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    Loading announcements records...
+                  </div>
+                </td>
+              </tr>
+
               <tr 
-                v-for="item in announcements" 
+                v-for="item in filteredAnnouncements" 
                 :key="item.id"
                 class="hover:bg-slate-50/50 transition-colors group"
+                v-else-if="filteredAnnouncements.length > 0"
               >
+                <!-- Thumbnail Preview -->
+                <td class="px-6 py-4">
+                  <div class="w-16 h-10 rounded bg-gray-100 border border-gray-200 overflow-hidden shrink-0">
+                    <img 
+                      v-if="item.imageUrl" 
+                      :src="item.imageUrl" 
+                      class="w-full h-full object-cover" 
+                    />
+                    <div v-else class="w-full h-full flex items-center justify-center bg-slate-50 text-[10px] text-slate-400">
+                      None
+                    </div>
+                  </div>
+                </td>
+
                 <td class="px-6 py-4">
                   <div class="font-medium text-slate-900 mb-1">{{ item.title }}</div>
                   <div class="text-xs text-slate-500 line-clamp-1 pr-4">{{ item.content }}</div>
@@ -88,14 +115,12 @@
                 
                 <td class="px-6 py-4 text-right">
                   <div class="flex items-center justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                    <!-- Edit Button -->
                     <button 
                       @click="openEditModal(item)"
                       class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-slate-100 hover:text-slate-900 h-8 w-8 text-slate-500"
                     >
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                     </button>
-                    <!-- Delete Button -->
                     <button 
                       @click="openDeleteModal(item)"
                       class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-red-50 hover:text-red-600 h-8 w-8 text-slate-500"
@@ -106,9 +131,8 @@
                 </td>
               </tr>
               
-              <!-- Empty State -->
-              <tr v-if="announcements.length === 0">
-                <td colspan="4" class="px-6 py-12 text-center text-slate-500">
+              <tr v-else>
+                <td colspan="5" class="px-6 py-12 text-center text-slate-500">
                   No announcements found. Click "New Announcement" to create one.
                 </td>
               </tr>
@@ -120,20 +144,38 @@
 
     <!-- Create/Edit Modal Overlay -->
     <div v-if="showFormModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-sm animate-in fade-in duration-200">
-      <!-- Modal Content -->
-      <div class="bg-white rounded-xl shadow-lg border border-slate-200 w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
+      <div class="bg-white rounded-xl shadow-lg border border-slate-200 w-full max-w-lg overflow-hidden max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200">
         
         <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
           <h2 class="text-lg font-semibold text-slate-900">
             {{ isEditing ? 'Edit Announcement' : 'Compose Announcement' }}
           </h2>
-          <button @click="closeFormModal" class="text-slate-400 hover:text-slate-600 focus:outline-none">
+          <button @click="closeFormModal" :disabled="isSaving" class="text-slate-400 hover:text-slate-600 focus:outline-none">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
           </button>
         </div>
 
         <form @submit.prevent="saveAnnouncement" class="p-6 space-y-6">
           <div class="space-y-4">
+            
+            <!-- Image Upload Field -->
+            <div class="space-y-2">
+              <label class="text-sm font-medium text-slate-900">Cover Image</label>
+              <div class="flex items-center gap-4">
+                <div class="w-24 h-16 rounded bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
+                  <img v-if="imagePreview" :src="imagePreview" class="w-full h-full object-cover" />
+                  <span v-else class="text-[10px] text-slate-400">No Image</span>
+                </div>
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  @change="handleFileChange"
+                  class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-slate-900 file:text-white hover:file:bg-slate-800 cursor-pointer disabled:opacity-50"
+                  :disabled="isSaving"
+                />
+              </div>
+            </div>
+
             <!-- Title -->
             <div class="space-y-2">
               <label class="text-sm font-medium leading-none text-slate-900">Announcement Title</label>
@@ -141,8 +183,9 @@
                 type="text" 
                 v-model="form.title"
                 placeholder="e.g., Scheduled System Maintenance" 
-                class="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950" 
+                class="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 disabled:opacity-50" 
                 required
+                :disabled="isSaving"
               />
             </div>
 
@@ -153,8 +196,9 @@
                 v-model="form.content"
                 rows="5"
                 placeholder="Write the full details of the announcement here..." 
-                class="flex w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 resize-y" 
+                class="flex w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 resize-y disabled:opacity-50" 
                 required
+                :disabled="isSaving"
               ></textarea>
             </div>
 
@@ -164,7 +208,8 @@
                 <label class="text-sm font-medium leading-none text-slate-900">Status</label>
                 <select 
                   v-model="form.status"
-                  class="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950"
+                  class="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 disabled:opacity-50"
+                  :disabled="isSaving"
                 >
                   <option value="Published">Published (Live)</option>
                   <option value="Draft">Draft</option>
@@ -176,26 +221,30 @@
                 <input 
                   type="date" 
                   v-model="form.date"
-                  class="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950" 
+                  class="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 disabled:opacity-50" 
                   required
+                  :disabled="isSaving"
                 />
               </div>
             </div>
           </div>
 
-          <div class="pt-2 flex justify-end gap-2">
+          <div class="pt-2 flex justify-end gap-2 border-t border-slate-100 mt-4">
             <button 
               type="button" 
               @click="closeFormModal"
-              class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-slate-100 hover:text-slate-900 h-10 px-4 py-2 border border-slate-200 bg-white text-slate-700"
+              :disabled="isSaving"
+              class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-slate-100 hover:text-slate-900 h-10 px-4 py-2 border border-slate-200 bg-white text-slate-700 disabled:opacity-50 mt-4"
             >
               Cancel
             </button>
             <button 
               type="submit" 
-              class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 bg-slate-900 text-slate-50 hover:bg-slate-900/90 h-10 px-6 py-2 shadow-sm"
+              :disabled="isSaving"
+              class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 bg-slate-900 text-slate-50 hover:bg-slate-900/90 h-10 px-6 py-2 shadow-sm disabled:opacity-75 mt-4"
             >
-              {{ isEditing ? 'Save Changes' : 'Publish Announcement' }}
+              <svg v-if="isSaving" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+              {{ isSaving ? 'Saving...' : (isEditing ? 'Save Changes' : 'Publish') }}
             </button>
           </div>
         </form>
@@ -204,9 +253,7 @@
 
     <!-- Delete Confirmation Modal Overlay -->
     <div v-if="showDeleteModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-sm animate-in fade-in duration-200">
-      <!-- Alert Dialog Content -->
       <div class="bg-white rounded-xl shadow-lg border border-slate-200 w-full max-w-md p-6 animate-in zoom-in-95 duration-200">
-        
         <div class="flex flex-col gap-4">
           <div class="flex items-start gap-4">
             <div class="p-2 bg-red-100 text-red-600 rounded-full shrink-0">
@@ -215,7 +262,7 @@
             <div>
               <h2 class="text-lg font-semibold text-slate-900">Delete Announcement</h2>
               <p class="text-sm text-slate-500 mt-1">
-                Are you sure you want to delete this announcement? This action cannot be undone and it will be permanently removed from the system.
+                Are you sure you want to delete this announcement? This action cannot be undone.
               </p>
               <div class="mt-3 p-3 bg-slate-50 border border-slate-100 rounded-md text-sm text-slate-700 font-medium line-clamp-1">
                 "{{ itemToDelete?.title }}"
@@ -227,14 +274,17 @@
             <button 
               type="button" 
               @click="closeDeleteModal"
-              class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-slate-100 hover:text-slate-900 h-10 px-4 py-2 border border-slate-200 bg-white text-slate-700"
+              :disabled="isDeleting"
+              class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-slate-100 hover:text-slate-900 h-10 px-4 py-2 border border-slate-200 bg-white text-slate-700 disabled:opacity-50"
             >
               Cancel
             </button>
             <button 
               @click="confirmDelete"
-              class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 bg-red-600 text-white hover:bg-red-700 h-10 px-6 py-2 shadow-sm"
+              :disabled="isDeleting"
+              class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 bg-red-600 text-white hover:bg-red-700 h-10 px-6 py-2 shadow-sm disabled:opacity-75"
             >
+              <svg v-if="isDeleting" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
               Delete
             </button>
           </div>
@@ -246,53 +296,109 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import AdminLayout from '../../layouts/AdminLayout.vue';
+import { db } from '../../firebase/index.js';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
 
-// --- State for Modals ---
+// --- CLOUDINARY ENVIRONMENT VARIABLES ---
+const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+
+// --- Local UI & Interaction State ---
 const showFormModal = ref(false);
 const showDeleteModal = ref(false);
 const isEditing = ref(false);
 const itemToDelete = ref(null);
 
-// Form model
+const isLoading = ref(true);
+const isSaving = ref(false);
+const isDeleting = ref(false);
+
+const searchQuery = ref('');
+const statusFilter = ref('all');
+
+// Image upload state
+const selectedFile = ref(null);
+const imagePreview = ref('');
+
+// Reactive state target for array payload
+const announcements = ref([]);
+
+// Form configuration blueprint instance
 const form = ref({
   id: null,
   title: '',
   content: '',
   status: 'Published',
-  date: ''
+  date: '',
+  imageUrl: ''
 });
 
-// Mock data for announcements
-const announcements = ref([
-  {
-    id: 1,
-    title: 'New GAD Guidelines Released for 2026',
-    content: 'Please be advised that the updated Gender and Development (GAD) guidelines for the fiscal year 2026 have been officially released. All division heads are required to review the attached documentation.',
-    status: 'Published',
-    date: '2026-07-08'
-  },
-  {
-    id: 2,
-    title: 'System Maintenance Notice',
-    content: 'The Hub will undergo scheduled maintenance this coming weekend. During this time, the documentations and activities portals will be temporarily inaccessible.',
-    status: 'Draft',
-    date: '2026-07-15'
-  },
-  {
-    id: 3,
-    title: 'Quarterly Report Submission Deadline',
-    content: 'A gentle reminder to all focal persons that the Q2 report submissions are due by the end of the month. Late submissions will require written justification.',
-    status: 'Archived',
-    date: '2026-06-25'
+// --- Fetch Announcements ---
+const fetchAnnouncements = async () => {
+  isLoading.value = true;
+  try {
+    const q = query(collection(db, 'announcements'), orderBy('date', 'desc'));
+    const querySnapshot = await getDocs(q);
+    announcements.value = querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error("Error retrieving announcements metrics:", error);
+    alert("Could not load data. Check console output.");
+  } finally {
+    isLoading.value = false;
   }
-]);
+};
 
-// --- Helper Functions ---
+onMounted(() => {
+  fetchAnnouncements();
+});
+
+// --- File Handling & Upload ---
+const handleFileChange = (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  
+  selectedFile.value = file;
+  imagePreview.value = URL.createObjectURL(file); // Local preview
+};
+
+const uploadToCloudinary = async () => {
+  if (!selectedFile.value) return form.value.imageUrl;
+
+  const formData = new FormData();
+  formData.append('file', selectedFile.value);
+  formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+  const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+    method: 'POST',
+    body: formData
+  });
+
+  if (!response.ok) throw new Error('Cloudinary Upload Failed');
+
+  const data = await response.json();
+  return data.secure_url;
+};
+
+// --- Filters ---
+const filteredAnnouncements = computed(() => {
+  return announcements.value.filter(item => {
+    const matchesSearch = item.title.toLowerCase().includes(searchQuery.value.toLowerCase()) || 
+                          item.content.toLowerCase().includes(searchQuery.value.toLowerCase());
+    const matchesStatus = statusFilter.value === 'all' || item.status === statusFilter.value;
+    return matchesSearch && matchesStatus;
+  });
+});
+
+// --- Utilities ---
 const formatDate = (dateString) => {
-  const options = { year: 'numeric', month: 'long', day: 'numeric' };
-  return new Date(dateString).toLocaleDateString('en-US', options);
+  if (!dateString) return '';
+  const options = { year: 'numeric', month: 'short', day: 'numeric' };
+  return new Date(dateString + 'T00:00:00').toLocaleDateString('en-US', options);
 };
 
 const getTodayDate = () => new Date().toISOString().split('T')[0];
@@ -303,11 +409,14 @@ const resetForm = () => {
     title: '',
     content: '',
     status: 'Published',
-    date: getTodayDate()
+    date: getTodayDate(),
+    imageUrl: ''
   };
+  selectedFile.value = null;
+  imagePreview.value = '';
 };
 
-// --- Form Modal Actions ---
+// --- Modal Controls ---
 const openCreateModal = () => {
   isEditing.value = false;
   resetForm();
@@ -316,8 +425,9 @@ const openCreateModal = () => {
 
 const openEditModal = (item) => {
   isEditing.value = true;
-  // Clone item into form so we don't mutate the table immediately before saving
   form.value = { ...item };
+  selectedFile.value = null;
+  imagePreview.value = item.imageUrl || ''; // Set existing image preview
   showFormModal.value = true;
 };
 
@@ -325,28 +435,44 @@ const closeFormModal = () => {
   showFormModal.value = false;
 };
 
-const saveAnnouncement = () => {
-  if (isEditing.value) {
-    // Update existing
-    const index = announcements.value.findIndex(a => a.id === form.value.id);
-    if (index !== -1) {
-      announcements.value[index] = { ...form.value };
+// --- Save Data ---
+const saveAnnouncement = async () => {
+  isSaving.value = true;
+  try {
+    // 1. Upload image if a new file was selected
+    const finalImageUrl = await uploadToCloudinary();
+    form.value.imageUrl = finalImageUrl;
+
+    // 2. Save to Firestore
+    if (isEditing.value) {
+      const docRef = doc(db, 'announcements', form.value.id);
+      const { id, ...dataToUpdate } = form.value;
+      
+      await updateDoc(docRef, dataToUpdate);
+      
+      const index = announcements.value.findIndex(a => a.id === form.value.id);
+      if (index !== -1) {
+        announcements.value[index] = { ...form.value };
+      }
+    } else {
+      const { id, ...dataToAdd } = form.value;
+      const docRef = await addDoc(collection(db, 'announcements'), dataToAdd);
+      
+      announcements.value.unshift({
+        ...dataToAdd,
+        id: docRef.id
+      });
     }
-  } else {
-    // Create new
-    const newId = announcements.value.length ? Math.max(...announcements.value.map(a => a.id)) + 1 : 1;
-    announcements.value.unshift({
-      ...form.value,
-      id: newId
-    });
+    closeFormModal();
+  } catch (error) {
+    console.error("Error committing update:", error);
+    alert("Write transaction failed. Please retry.");
+  } finally {
+    isSaving.value = false;
   }
-  
-  // Replace with actual API call (e.g., Firebase) here.
-  
-  closeFormModal();
 };
 
-// --- Delete Modal Actions ---
+// --- Delete Logic ---
 const openDeleteModal = (item) => {
   itemToDelete.value = item;
   showDeleteModal.value = true;
@@ -357,11 +483,18 @@ const closeDeleteModal = () => {
   itemToDelete.value = null;
 };
 
-const confirmDelete = () => {
-  if (itemToDelete.value) {
+const confirmDelete = async () => {
+  if (!itemToDelete.value) return;
+  isDeleting.value = true;
+  try {
+    await deleteDoc(doc(db, 'announcements', itemToDelete.value.id));
     announcements.value = announcements.value.filter(a => a.id !== itemToDelete.value.id);
-    // Replace with actual API delete call here.
+    closeDeleteModal();
+  } catch (error) {
+    console.error("Error dropping document:", error);
+    alert("Failed to drop record context safely.");
+  } finally {
+    isDeleting.value = false;
   }
-  closeDeleteModal();
 };
 </script>
