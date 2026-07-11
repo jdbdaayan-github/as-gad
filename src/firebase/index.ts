@@ -6,13 +6,13 @@ import { initializeFirestore } from 'firebase/firestore';
 // Your web app's Firebase configuration
 // (Replace these values with the ones you copied from the Firebase Console in Phase 2)
 const firebaseConfig = {
-  apiKey: "AIzaSyCH71VRj6QVXHr2ElcqY8HPhw_fxQWoSng",
-  authDomain: "dswd-gad-hub.firebaseapp.com",
-  projectId: "dswd-gad-hub",
-  storageBucket: "dswd-gad-hub.firebasestorage.app",
-  messagingSenderId: "966436328421",
-  appId: "1:966436328421:web:8b44c44f60e5e07c73d50c",
-  measurementId: "G-RHSZ4P1Y1W"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_MEASUREMENT_ID,
 };
 
 // Initialize Firebase

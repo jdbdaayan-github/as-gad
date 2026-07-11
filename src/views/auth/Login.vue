@@ -21,8 +21,10 @@
           <h2 class="text-xl font-semibold text-[#FFD700] tracking-wide">Gender and Development Information Hub</h2>
         </div>
         
-        <p class="text-[#e2d8f0] max-w-md mt-4 leading-relaxed">
-          Access your dashboard to manage sex-disaggregated data, GAD documentations, and resources to help build a safe and inclusive society for all genders.
+        <p class="text-[#e2d8f0] max-w-md mt-4 leading-relaxed text-lg">
+          Welcome to the Administrative Service Gender and Development Information Hub.
+          Access reports, resources, and information through a secure and centralized
+          platform designed to support efficient data management and collaboration.
         </p>
       </div>
     </div>
@@ -66,7 +68,7 @@
                   required 
                   v-model="email"
                   class="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#4c0f89] focus:border-[#4c0f89] sm:text-sm transition-colors" 
-                  placeholder="admin@dswd.gov.ph"
+                  placeholder="Enter"
                 />
               </div>
             </div>
@@ -86,27 +88,6 @@
                   placeholder="••••••••"
                 />
               </div>
-            </div>
-          </div>
-
-          <div class="flex items-center justify-between">
-            <div class="flex items-center">
-              <input 
-                id="remember-me" 
-                name="remember-me" 
-                type="checkbox" 
-                v-model="rememberMe"
-                class="h-4 w-4 text-[#4c0f89] focus:ring-[#4c0f89] border-gray-300 rounded" 
-              />
-              <label for="remember-me" class="ml-2 block text-sm text-gray-900">
-                Remember me
-              </label>
-            </div>
-
-            <div class="text-sm">
-              <a href="#" class="font-medium text-[#4c0f89] hover:text-[#3a0b69]">
-                Forgot your password?
-              </a>
             </div>
           </div>
 

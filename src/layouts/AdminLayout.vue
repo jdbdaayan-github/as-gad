@@ -1,7 +1,12 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { getAuth, signOut } from 'firebase/auth'
 
-// Reactive state to control the mobile sidebar
+const router = useRouter()
+const auth = getAuth()
+
+// --- Sidebar State ---
 const isSidebarOpen = ref(false)
 
 const toggleSidebar = () => {
@@ -11,6 +16,65 @@ const toggleSidebar = () => {
 const closeSidebar = () => {
   isSidebarOpen.value = false
 }
+
+// --- Session Expiration (Idle Timeout) Logic ---
+let timeoutTimer = null
+const IDLE_TIMEOUT_MS = 15 * 60 * 1000 // 15 minutes 
+
+// Reset the timer whenever the user interacts with the page
+const resetIdleTimer = () => {
+  if (timeoutTimer) clearTimeout(timeoutTimer)
+  timeoutTimer = setTimeout(handleAutoLogout, IDLE_TIMEOUT_MS)
+}
+
+// Function to log the user out
+const handleAutoLogout = async () => {
+  try {
+    alert("Your session has expired due to inactivity.")
+    await signOut(auth) // Sign out from Firebase
+    router.push('/login') // Redirect to login page
+  } catch (error) {
+    console.error("Logout Error:", error)
+  }
+}
+
+// Manual Logout for the "Log out" button
+const manualLogout = async () => {
+  try {
+    await signOut(auth)
+    router.push('/login')
+  } catch (error) {
+    console.error("Logout Error:", error)
+  }
+}
+
+// Setup activity listeners when the admin layout is loaded
+const setupActivityListeners = () => {
+  window.addEventListener('mousemove', resetIdleTimer)
+  window.addEventListener('mousedown', resetIdleTimer)
+  window.addEventListener('keypress', resetIdleTimer)
+  window.addEventListener('touchmove', resetIdleTimer)
+  window.addEventListener('scroll', resetIdleTimer, true)
+  resetIdleTimer() // Start the timer immediately
+}
+
+// Cleanup listeners when navigating away
+const cleanupActivityListeners = () => {
+  window.removeEventListener('mousemove', resetIdleTimer)
+  window.removeEventListener('mousedown', resetIdleTimer)
+  window.removeEventListener('keypress', resetIdleTimer)
+  window.removeEventListener('touchmove', resetIdleTimer)
+  window.removeEventListener('scroll', resetIdleTimer, true)
+  if (timeoutTimer) clearTimeout(timeoutTimer)
+}
+
+onMounted(() => {
+  setupActivityListeners()
+})
+
+onUnmounted(() => {
+  cleanupActivityListeners()
+})
 </script>
 
 <template>
@@ -139,6 +203,16 @@ const closeSidebar = () => {
               <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
               Documentations
             </router-link>
+
+            <router-link 
+              to="/admin/resources" 
+              class="flex items-center gap-3 rounded-md px-4 py-2 text-sm font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+              active-class="bg-slate-100 text-slate-900"
+              @click="closeSidebar"
+            >
+              <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+              Resources
+            </router-link>
           </div>
         </div>
 
@@ -186,7 +260,8 @@ const closeSidebar = () => {
       <!-- Bottom Profile/Logout Area -->
       <div class="p-4 border-t border-slate-200 shrink-0">
         <button 
-          class="w-full flex items-center gap-3 px-4 py-2 rounded-md text-sm font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+          @click="manualLogout"
+          class="w-full flex items-center gap-3 px-4 py-2 rounded-md text-sm font-medium text-slate-500 hover:bg-slate-100 hover:text-red-600 transition-colors"
         >
           <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
           Log out
@@ -216,19 +291,8 @@ const closeSidebar = () => {
         
         <!-- Right: Actions & Profile -->
         <div class="flex items-center gap-4">
-          <!-- Search Input -->
-          <div class="hidden sm:flex items-center relative">
-            <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-1.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-            <input 
-              type="text" 
-              placeholder="Search..." 
-              class="h-8 w-64 rounded-md border border-slate-200 bg-transparent px-3 pl-8 py-1 text-sm shadow-sm transition-colors placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-950" 
-            />
-          </div>
-
-          <!-- User Profile Dropdown Trigger -->
-          <button class="h-8 w-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 font-medium text-xs hover:bg-slate-200 transition-colors">
-            AD
+          <button @click="manualLogout" class="h-8 w-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 font-medium text-xs hover:bg-slate-200 transition-colors" title="Log Out">
+            <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
           </button>
         </div>
       </header>
