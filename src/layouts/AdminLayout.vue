@@ -23,20 +23,65 @@ const userEmail = ref('')
 // --- Logout Confirmation State ---
 const showLogoutModal = ref(false)
 
-// --- Session Expiration (Idle Timeout) Logic ---
-let timeoutTimer = null
-const IDLE_TIMEOUT_MS = 15 * 60 * 1000 // 15 minutes 
+// --- Session Expiration Logic ---
+const showExpirationModal = ref(false)
+const countdownSeconds = ref(60)
+
+let warningTimer = null
+let logoutTimer = null
+let countdownInterval = null
+
+// Show warning after 14 minutes, forcefully logout 1 minute later
+const WARNING_TIMEOUT_MS = 14 * 60 * 1000 // 14 minutes
+const LOGOUT_TIMEOUT_MS = 60 * 1000       // 60 seconds
+
+// Clear all active timers
+const clearTimers = () => {
+  if (warningTimer) clearTimeout(warningTimer)
+  if (logoutTimer) clearTimeout(logoutTimer)
+  if (countdownInterval) clearInterval(countdownInterval)
+}
 
 // Reset the timer whenever the user interacts with the page
 const resetIdleTimer = () => {
-  if (timeoutTimer) clearTimeout(timeoutTimer)
-  timeoutTimer = setTimeout(handleAutoLogout, IDLE_TIMEOUT_MS)
+  // If the warning modal is already showing, don't reset timers based on mouse movement.
+  // The user must click "Stay logged in" to clear the warning.
+  if (showExpirationModal.value) return
+
+  clearTimers()
+  
+  // Start the timer for the warning modal
+  warningTimer = setTimeout(triggerWarning, WARNING_TIMEOUT_MS)
+}
+
+// Show the warning modal and start the countdown
+const triggerWarning = () => {
+  showExpirationModal.value = true
+  countdownSeconds.value = 60
+
+  // Start visual countdown
+  countdownInterval = setInterval(() => {
+    countdownSeconds.value--
+    if (countdownSeconds.value <= 0) {
+      clearInterval(countdownInterval)
+    }
+  }, 1000)
+
+  // Start final timer that executes the logout
+  logoutTimer = setTimeout(handleAutoLogout, LOGOUT_TIMEOUT_MS)
+}
+
+// User clicked "Stay logged in"
+const stayLoggedIn = () => {
+  showExpirationModal.value = false
+  resetIdleTimer()
 }
 
 // Function to log the user out automatically
 const handleAutoLogout = async () => {
+  clearTimers()
+  showExpirationModal.value = false
   try {
-    alert("Your session has expired due to inactivity.")
     await signOut(auth) // Sign out from Firebase
     router.push('/login') // Redirect to login page
   } catch (error) {
@@ -49,7 +94,7 @@ const promptLogout = () => {
   showLogoutModal.value = true
 }
 
-// Close logout modal
+// Close manual logout modal
 const closeLogoutModal = () => {
   showLogoutModal.value = false
 }
@@ -82,7 +127,7 @@ const cleanupActivityListeners = () => {
   window.removeEventListener('keypress', resetIdleTimer)
   window.removeEventListener('touchmove', resetIdleTimer)
   window.removeEventListener('scroll', resetIdleTimer, true)
-  if (timeoutTimer) clearTimeout(timeoutTimer)
+  clearTimers()
 }
 
 onMounted(() => {
@@ -251,7 +296,7 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <!-- Group: System (Moved Settings to bottom, kept directories here) -->
+        <!-- Group: System -->
         <div class="px-3">
           <h2 class="mb-2 px-4 text-xs font-semibold tracking-tight text-slate-500 uppercase">
             System
@@ -327,7 +372,6 @@ onUnmounted(() => {
 
       <!-- Scrollable Page Content -->
       <div class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 custom-scrollbar">
-        <!-- Container max width -->
         <div class="max-w-full mx-auto w-full">
           <slot />
         </div>
@@ -344,6 +388,30 @@ onUnmounted(() => {
           <button @click="closeLogoutModal" class="px-4 py-2 text-sm border border-slate-200 text-slate-700 rounded-md hover:bg-slate-50 transition-colors focus:outline-none">Cancel</button>
           <button @click="confirmLogout" class="px-6 py-2 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors flex items-center focus:outline-none">
             Log out
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Session Expiration Warning Modal -->
+    <div v-if="showExpirationModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-sm animate-in fade-in duration-200">
+      <div class="bg-white rounded-xl shadow-lg border border-slate-200 w-full max-w-sm p-6 animate-in zoom-in-95 duration-200">
+        <div class="flex items-center gap-3 mb-2">
+          <div class="flex-shrink-0 w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
+            <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+          </div>
+          <h2 class="text-lg font-semibold text-slate-900">Session Expiring Soon</h2>
+        </div>
+        <p class="text-sm text-slate-500 mb-6 pl-13">
+          You've been inactive for a while. For your security, you will be automatically logged out in 
+          <strong class="text-slate-900">{{ countdownSeconds }}</strong> seconds.
+        </p>
+        <div class="flex justify-end gap-2">
+          <button @click="handleAutoLogout" class="px-4 py-2 text-sm border border-slate-200 text-slate-700 rounded-md hover:bg-slate-50 transition-colors focus:outline-none">
+            Log out now
+          </button>
+          <button @click="stayLoggedIn" class="px-6 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center focus:outline-none">
+            Stay logged in
           </button>
         </div>
       </div>
