@@ -108,7 +108,12 @@ const router = createRouter({
       name: 'twg',
       component: TWG,
       meta: { requiresAuth: true } // Add meta tag to identify protected routes
-    }
+    },
+    {
+    path: '/:pathMatch(.*)*',
+    name: 'NotFound',
+    component: () => import('../views/public/NotFound.vue') // Verify your exact folder track mapping here
+  }
   ]
 })
 
