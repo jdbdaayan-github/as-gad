@@ -11,7 +11,17 @@ const isLoading = ref(true);
 const fetchMembers = async () => {
   try {
     const snapshot = await getDocs(collection(db, 'twg_members'));
-    members.value = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    let fetchedMembers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    // Sort members from oldest to newest upload based on a timestamp.
+    // If no timestamp exists on older records, they default to 0 (placed at the beginning).
+    fetchedMembers.sort((a, b) => {
+      const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt || 0);
+      const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt || 0);
+      return timeA - timeB; // Ascending order (oldest first)
+    });
+
+    members.value = fetchedMembers;
   } catch(error) {
     console.error("Error fetching TWG members:", error);
   } finally {
@@ -66,7 +76,8 @@ onMounted(() => {
                   <img :src="person.imageUrl || 'https://via.placeholder.com/150'" alt="Profile" class="w-full h-full object-cover" />
                 </div>
                 <h4 class="text-[13px] font-bold text-gray-900 leading-tight mb-1">{{ person.name }}</h4>
-                <p class="text-[10px] text-gray-500 font-medium leading-tight">{{ person.position }}</p>
+                <p class="text-[10px] text-gray-500 font-medium leading-tight mb-1">{{ person.position }}</p>
+                <p v-if="person.role" class="text-[10px] text-[#1e3a8a] font-semibold leading-tight">{{ person.role }}</p>
               </div>
             </div>
           </div>
@@ -82,7 +93,8 @@ onMounted(() => {
                   <img :src="person.imageUrl || 'https://via.placeholder.com/150'" alt="Profile" class="w-full h-full object-cover" />
                 </div>
                 <h4 class="text-[13px] font-bold text-gray-900 leading-tight mb-1">{{ person.name }}</h4>
-                <p class="text-[10px] text-gray-500 font-medium leading-tight">{{ person.position }}</p>
+                <p class="text-[10px] text-gray-500 font-medium leading-tight mb-1">{{ person.position }}</p>
+                <p v-if="person.role" class="text-[10px] text-[#1e3a8a] font-semibold leading-tight">{{ person.role }}</p>
               </div>
             </div>
           </div>
@@ -98,7 +110,8 @@ onMounted(() => {
                   <img :src="person.imageUrl || 'https://via.placeholder.com/150'" alt="Profile" class="w-full h-full object-cover" />
                 </div>
                 <h4 class="text-[13px] font-bold text-gray-900 leading-tight mb-1">{{ person.name }}</h4>
-                <p class="text-[10px] text-gray-500 font-medium leading-tight">{{ person.position }}</p>
+                <p class="text-[10px] text-gray-500 font-medium leading-tight mb-1">{{ person.position }}</p>
+                <p v-if="person.role" class="text-[10px] text-[#1e3a8a] font-semibold leading-tight">{{ person.role }}</p>
               </div>
             </div>
           </div>
@@ -114,7 +127,8 @@ onMounted(() => {
                   <img :src="person.imageUrl || 'https://via.placeholder.com/150'" alt="Profile" class="w-full h-full object-cover" />
                 </div>
                 <h4 class="text-[12px] sm:text-[13px] font-bold text-gray-900 leading-tight mb-1">{{ person.name }}</h4>
-                <p class="text-[9px] sm:text-[10px] text-gray-500 font-medium leading-tight">{{ person.position }}</p>
+                <p class="text-[9px] sm:text-[10px] text-gray-500 font-medium leading-tight mb-1">{{ person.position }}</p>
+                <p v-if="person.role" class="text-[9px] sm:text-[10px] text-[#1e3a8a] font-semibold leading-tight">{{ person.role }}</p>
               </div>
             </div>
           </div>
